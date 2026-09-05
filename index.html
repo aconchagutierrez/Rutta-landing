@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Rutta centraliza despacho, rutas y seguimiento en tiempo real para empresas de transporte terrestre. Agenda una llamada de 30 minutos.">
+<title>Rutta — Software de operación para transporte terrestre</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='16' fill='none' stroke='%23262626' stroke-width='1.6'/%3E%3Cpath d='M17 9l4.2 8L17 25l-4.2-8z' fill='none' stroke='%23262626' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E"><meta property="og:type" content="website"><meta property="og:locale" content="es_ES"><meta property="og:site_name" content="Rutta"><meta property="og:title" content="Toda tu operación en una sola pantalla"><meta property="og:description" content="Despacho, rutas y seguimiento en tiempo real para empresas de transporte terrestre. Agenda una llamada de 30 minutos."><meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@200;300;400;500&display=swap">
+<style>
+  /* ---- Tema claro (base) ---- */
+  :root{
+    --bg:#ffffff;
+    --ink:#262626;        /* gris neutro, no negro */
+    --ink-2:#666666;
+    --ink-3:#8c8c8c;
+    --line:#e5e5e5;       /* hairline */
+    --soft:#f2f2f2;       /* superficie tenue */
+    --panel:#dcf0d6;      /* panel menta */
+    --panel-ink:#234923;
+    --green:#234923;      /* verde profundo */
+    --on-green:#ffffff;
+    --field:#ffffff;
+    --header-bg:rgba(255,255,255,.86);
+    --focus:rgba(38,38,38,.14);
+
+    --font:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --max:1160px;
+  }
+
+  /* ---- Oscuro por sistema (salvo elección explícita de claro) ---- */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121212;
+      --ink:#e8e8e8;
+      --ink-2:#a3a3a3;
+      --ink-3:#8a8a8a;
+      --line:#2a2a2a;
+      --soft:#1c1c1c;
+      --panel:#1b2e19;
+      --panel-ink:#cde8c4;
+      --green:#8fc98f;
+      --on-green:#101a10;
+      --field:#171717;
+      --header-bg:rgba(18,18,18,.86);
+      --focus:rgba(232,232,232,.18);
+    }
+  }
+  /* ---- Oscuro elegido explícitamente ---- */
+  :root[data-theme="dark"]{
+    --bg:#121212;
+    --ink:#e8e8e8;
+    --ink-2:#a3a3a3;
+    --ink-3:#8a8a8a;
+    --line:#2a2a2a;
+    --soft:#1c1c1c;
+    --panel:#1b2e19;
+    --panel-ink:#cde8c4;
+    --green:#8fc98f;
+    --on-green:#101a10;
+    --field:#171717;
+    --header-bg:rgba(18,18,18,.86);
+    --focus:rgba(232,232,232,.18);
+  }
+
+  *{box-sizing:border-box}
+  @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font);
+    font-size:16px;
+    font-weight:400;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  p{margin:0}
+  a{color:inherit}
+  :focus-visible{outline:1.5px solid var(--ink);outline-offset:3px;border-radius:4px}
+
+  /* Titulares: una sola familia, el peso hace el trabajo */
+  h1,h2{
+    margin:0;
+    font-weight:200;
+    letter-spacing:-0.015em;
+    line-height:1.08;
+    text-wrap:balance;
+  }
+  h3{margin:0;font-weight:500;font-size:17px;line-height:1.3}
+  h1{font-size:clamp(38px,6vw,68px)}
+  h2{font-size:clamp(28px,3.6vw,42px)}
+
+  /* Conteo entre paréntesis junto al título de sección */
+  .count{font-size:15px;font-weight:400;color:var(--ink-3);letter-spacing:0;margin-left:6px}
+
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+  .rule{border:0;border-top:1px solid var(--line);margin:0}
+
+  /* ---- Botones ---- */
+  .btn{
+    display:inline-flex;align-items:center;gap:14px;
+    padding:8px 6px 8px 20px;
+    border:0;border-radius:10px;
+    background:var(--soft);color:var(--ink);
+    font-family:var(--font);font-size:14px;font-weight:400;
+    text-decoration:none;cursor:pointer;
+    transition:background-color .18s ease;
+  }
+  .btn:hover{background:var(--line)}
+  .btn .arrow{
+    flex:0 0 auto;
+    width:30px;height:30px;border-radius:50%;
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .18s ease;
+  }
+  .btn .arrow svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+  .btn:hover .arrow{transform:translateX(3px)}
+
+  .btn--primary{background:var(--green);color:var(--on-green)}
+  .btn--primary:hover{background:var(--green);opacity:.88}
+  .btn--primary .arrow{border-color:rgba(255,255,255,.45)}
+  :root[data-theme="dark"] .btn--primary .arrow{border-color:rgba(16,26,16,.4)}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .btn--primary .arrow{border-color:rgba(16,26,16,.4)}
+  }
+  .btn--block{width:100%;justify-content:space-between}
+  @media (prefers-reduced-motion: reduce){
+    .btn,.btn .arrow{transition:none}
+    .btn:hover .arrow{transform:none}
+  }
+
+  /* ---- Header ---- */
+  .site-header{
+    position:sticky;top:0;z-index:20;
+    background:var(--header-bg);
+    backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid transparent;
+    transition:border-color .2s ease;
+  }
+  .site-header.is-stuck{border-bottom-color:var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:24px;height:84px}
+  .logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+  .logo .mark{flex:0 0 auto;width:34px;height:34px}
+  .logo .mark svg{width:34px;height:34px;stroke:var(--ink);fill:none;stroke-width:1.1;stroke-linejoin:round}
+  .logo .lockup{display:flex;flex-direction:column;line-height:1.25}
+  .logo .lockup b{font-size:15px;font-weight:500;letter-spacing:-0.01em}
+  .logo .lockup span{font-size:13px;font-weight:400;color:var(--ink-2)}
+  .nav-links{display:flex;align-items:center;gap:30px}
+  .nav-links a:not(.btn){font-size:14px;color:var(--ink-2);text-decoration:none}
+  .nav-links a:not(.btn):hover{color:var(--ink)}
+  @media (max-width:780px){
+    .nav-links a:not(.btn){display:none}
+    .logo .lockup span{display:none}
+  }
+
+  /* ---- Hero ---- */
+  .hero{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.86fr);
+    gap:56px;align-items:center;
+    padding-top:88px;padding-bottom:104px;
+  }
+  .label{font-size:14px;color:var(--ink-3);margin-bottom:26px}
+  .hero .lead{margin-top:26px;max-width:52ch;font-size:19px;font-weight:300;color:var(--ink-2)}
+  .hero-cta{margin-top:40px;display:flex;gap:12px;flex-wrap:wrap}
+  .hero-note{margin-top:22px;font-size:14px;color:var(--ink-3)}
+  .hero-art{width:100%;height:auto}
+  .hero-art .stroke{stroke:var(--ink);fill:none;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+  .hero-art .thin{stroke:var(--line);fill:none;stroke-width:1.2;stroke-linecap:round}
+  .hero-art .blob{fill:var(--panel)}
+  @media (max-width:900px){
+    .hero{grid-template-columns:1fr;gap:44px;padding-top:56px;padding-bottom:72px}
+    .hero-art{max-width:440px}
+  }
+
+  /* ---- Paneles de cifras ---- */
+  .panels{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:72px 0}
+  @media (max-width:860px){ .panels{grid-template-columns:1fr} }
+  .panel{background:var(--panel);color:var(--panel-ink);border-radius:16px;padding:24px;min-height:190px;display:flex;flex-direction:column}
+  .panel .k{font-size:15px;font-weight:500}
+  .panel .d{font-size:14px;color:var(--panel-ink);opacity:.72;margin-top:2px}
+  .panel .v{margin-top:auto;font-size:clamp(38px,4.4vw,52px);font-weight:200;letter-spacing:-0.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+
+  /* ---- Secciones ---- */
+  .block{padding-top:104px;padding-bottom:104px}
+  .section-head{max-width:56ch}
+  .section-head p{margin-top:16px;font-size:18px;font-weight:300;color:var(--ink-2)}
+
+  /* Filas con hairline: la línea separa, no la caja */
+  .rows{margin-top:64px;border-top:1px solid var(--line)}
+  .rows .item{
+    display:grid;grid-template-columns:44px minmax(0,26ch) minmax(0,1fr);
+    gap:32px;align-items:start;
+    padding:32px 0;border-bottom:1px solid var(--line);
+  }
+  .rows .item .icon svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+  .rows .item .num{font-size:14px;color:var(--ink-3);font-variant-numeric:tabular-nums;padding-top:2px}
+  .rows .item p{color:var(--ink-2);font-weight:300;font-size:17px}
+  @media (max-width:800px){
+    .rows .item{grid-template-columns:1fr;gap:12px;padding:28px 0}
+    .rows .item .icon svg{width:24px;height:24px}
+  }
+
+  /* ---- Agendar ---- */
+  .booking{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:72px;align-items:start}
+  @media (max-width:940px){ .booking{grid-template-columns:1fr;gap:48px} }
+  .checklist{list-style:none;padding:0;margin:34px 0 0;border-top:1px solid var(--line)}
+  .checklist li{
+    display:flex;gap:14px;align-items:baseline;
+    padding:14px 0;border-bottom:1px solid var(--line);
+    color:var(--ink-2);font-weight:300;font-size:16px;
+  }
+  .checklist li::before{content:"";flex:0 0 auto;width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+  .card{border:1px solid var(--line);border-radius:16px;padding:32px;background:var(--bg)}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:8px}
+  .field input,.field select,.field textarea{
+    width:100%;height:48px;padding:0 14px;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--field);color:var(--ink);
+    font-family:var(--font);font-size:15px;font-weight:400;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input::placeholder,.field textarea::placeholder{color:var(--ink-3)}
+  .field textarea{height:92px;padding:13px 14px;resize:vertical;line-height:1.5}
+  .field select{
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%238c8c8c' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 14px center;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;border-color:var(--ink-3);box-shadow:0 0 0 3px var(--focus);
+  }
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:520px){ .row{grid-template-columns:1fr} }
+  .form-note{margin-top:16px;font-size:13px;color:var(--ink-3)}
+
+  .success{display:none;padding:20px 0 8px}
+  .success .badge{
+    width:44px;height:44px;border-radius:50%;background:var(--panel);
+    display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+  }
+  .success .badge svg{width:20px;height:20px;stroke:var(--panel-ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+  .success h3{font-size:20px;font-weight:400;margin-bottom:10px}
+  .success p{color:var(--ink-2);font-weight:300}
+  form.sent{display:none}
+  .success.sent{display:block}
+
+  /* ---- Footer ---- */
+  .site-footer{border-top:1px solid var(--line);padding:40px 0 56px}
+  .foot{display:flex;justify-content:space-between;align-items:baseline;gap:20px;flex-wrap:wrap;font-size:14px;color:var(--ink-3)}
+  .foot a{text-decoration:none}
+  .foot a:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header">
+  <div class="wrap nav">
+    <a class="logo" href="#top">
+      <span class="mark">
+        <svg viewBox="0 0 34 34" aria-hidden="true">
+          <circle cx="17" cy="17" r="16"/>
+          <path d="M17 9l4.2 8L17 25l-4.2-8z"/>
+        </svg>
+      </span>
+      <span class="lockup">
+        <b>Rutta</b>
+        <span>Despacho para transporte terrestre</span>
+      </span>
+    </a>
+    <nav class="nav-links">
+      <a href="#producto">Producto</a>
+      <a href="#como-funciona">Cómo funciona</a>
+      <a class="btn btn--primary" href="#agendar">
+        Agendar llamada
+        <span class="arrow"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg></span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <section class="wrap hero">
+    <div>
+      <p class="label">Para empresas de transporte terrestre</p>
+      <h1>Toda tu operación en una sola pantalla</h1>
+      <p class="lead">
+        Rutta reúne despacho, rutas y seguimiento en tiempo real para que dejes de coordinar
+        tu flota entre hojas de cálculo, grupos de WhatsApp y llamadas perdidas.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn--primary" href="#agendar">
+          Agendar una llamada
+          <span class="arrow"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg></span>
+        </a>
+        <a class="btn" href="#producto">
+          Ver qué incluye
+          <span class="arrow"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg></span>
+        </a>
+      </div>
+      <p class="hero-note">30 minutos · Sin compromiso · Te mostramos tu operación dentro de Rutta</p>
+    </div>
+
+    <svg class="hero-art" viewBox="0 0 440 300" role="img" aria-label="Ilustración de línea: un camión de carga siguiendo una ruta trazada entre dos puntos">
+      <circle class="blob" cx="320" cy="96" r="62"/>
+      <!-- ruta -->
+      <path class="stroke" d="M28 128C110 44 250 40 322 104" stroke-dasharray="3 7"/>
+      <circle class="stroke" cx="28" cy="128" r="5"/>
+      <path class="stroke" d="M322 74a13 13 0 0 1 13 13c0 9.5-13 22-13 22s-13-12.5-13-22a13 13 0 0 1 13-13z"/>
+      <circle class="stroke" cx="322" cy="87" r="4.5"/>
+      <!-- suelo -->
+      <path class="thin" d="M12 252h416"/>
+      <!-- camión -->
+      <rect class="stroke" x="40" y="155" width="190" height="73" rx="7"/>
+      <path class="thin" d="M92 168v47M144 168v47M196 168v47"/>
+      <path class="stroke" d="M232 165h42l28 32v31h-70z"/>
+      <path class="stroke" d="M272 174h12l14 18h-26z"/>
+      <path class="thin" d="M296 214h8"/>
+      <circle class="stroke" cx="85" cy="234" r="18"/>
+      <circle class="stroke" cx="85" cy="234" r="6"/>
+      <circle class="stroke" cx="130" cy="234" r="18"/>
+      <circle class="stroke" cx="130" cy="234" r="6"/>
+      <circle class="stroke" cx="278" cy="234" r="18"/>
+      <circle class="stroke" cx="278" cy="234" r="6"/>
+    </svg>
+  </section>
+
+  <!-- Cifras -->
+  <div class="wrap">
+    <hr class="rule">
+    <div class="panels">
+      <div class="panel">
+        <span class="k">Tiempo muerto</span>
+        <span class="d">Por unidad, primer trimestre</span>
+        <span class="v">-31%</span>
+      </div>
+      <div class="panel">
+        <span class="k">Viajes coordinados</span>
+        <span class="d">Promedio diario en la plataforma</span>
+        <span class="v">2.400+</span>
+      </div>
+      <div class="panel">
+        <span class="k">Puesta en marcha</span>
+        <span class="d">Desde la llamada hasta operar</span>
+        <span class="v">2 semanas</span>
+      </div>
+    </div>
+    <hr class="rule">
+  </div>
+
+  <!-- Producto -->
+  <section class="wrap block" id="producto">
+    <div class="section-head">
+      <h2>Lo esencial, sin capas de más<span class="count">(3)</span></h2>
+      <p>Tres cosas bien resueltas en lugar de veinte módulos que nadie abre.</p>
+    </div>
+
+    <div class="rows">
+      <div class="item">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h2l1-4h12l1 4h2"/><path d="M6 13V7h9l4 6"/><circle cx="8" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        </span>
+        <h3>Despacho en minutos</h3>
+        <p>Asigna unidad, operador y carga desde un mismo tablero. Cada cambio le llega al conductor al instante.</p>
+      </div>
+      <div class="item">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        </span>
+        <h3>Seguimiento en tiempo real</h3>
+        <p>Posición, retrasos y evidencia de entrega en vivo. Tu cliente pregunta menos porque ya lo puede ver.</p>
+      </div>
+      <div class="item">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15v-4"/><path d="M13 15V8"/><path d="M18 15v-6"/></svg>
+        </span>
+        <h3>Costo real por viaje</h3>
+        <p>Combustible, casetas, horas y mantenimiento por ruta. Sabes qué cliente deja margen y cuál no.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- Cómo funciona -->
+  <section class="wrap block" id="como-funciona">
+    <div class="section-head">
+      <h2>Cómo empezamos<span class="count">(3)</span></h2>
+      <p>Sin implementaciones de seis meses ni consultores instalados en tus oficinas.</p>
+    </div>
+
+    <div class="rows">
+      <div class="item">
+        <span class="num">01</span>
+        <h3>Agendas una llamada</h3>
+        <p>30 minutos para entender tu flota, tus rutas y dónde se te va el tiempo hoy.</p>
+      </div>
+      <div class="item">
+        <span class="num">02</span>
+        <h3>Configuramos tu operación</h3>
+        <p>Cargamos unidades, operadores y clientes. Tú solo revisas que todo esté correcto.</p>
+      </div>
+      <div class="item">
+        <span class="num">03</span>
+        <h3>Operas con Rutta</h3>
+        <p>Tu equipo despacha desde el primer día, con acompañamiento las primeras dos semanas.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- Agendar -->
+  <section class="wrap block" id="agendar">
+    <div class="booking">
+      <div>
+        <div class="section-head">
+          <h2>Agenda una llamada</h2>
+          <p>Déjanos tus datos y te contactamos el mismo día hábil para reservar el horario que mejor te acomode.</p>
+        </div>
+        <ul class="checklist">
+          <li>30 minutos por videollamada</li>
+          <li>Hablas con alguien del equipo, no con un vendedor</li>
+          <li>Sales con un diagnóstico de tu operación</li>
+          <li>Si no te sirve, te lo decimos en la llamada</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <form id="booking-form" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="nombre">Nombre</label>
+              <input id="nombre" name="nombre" type="text" placeholder="Ana Ríos" required>
+            </div>
+            <div class="field">
+              <label for="empresa">Empresa</label>
+              <input id="empresa" name="empresa" type="text" placeholder="Transportes del Norte" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="email">Correo corporativo</label>
+            <input id="email" name="email" type="email" placeholder="ana@empresa.com" required>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="telefono">Teléfono</label>
+              <input id="telefono" name="telefono" type="tel" placeholder="+52 55 0000 0000">
+            </div>
+            <div class="field">
+              <label for="flota">Tamaño de flota</label>
+              <select id="flota" name="flota" required>
+                <option value="">Selecciona</option>
+                <option>1 – 10 unidades</option>
+                <option>11 – 50 unidades</option>
+                <option>51 – 200 unidades</option>
+                <option>Más de 200 unidades</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="mensaje">Qué te gustaría resolver (opcional)</label>
+            <textarea id="mensaje" name="mensaje" placeholder="Ej. no tenemos visibilidad de las entregas del día"></textarea>
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">
+            Agendar llamada
+            <span class="arrow"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg></span>
+          </button>
+          <p class="form-note">Usamos tus datos solo para contactarte. Nada de spam.</p>
+        </form>
+
+        <div class="success" id="booking-success">
+          <span class="badge">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l5 5L19 7.5"/></svg>
+          </span>
+          <h3>Listo, recibimos tu solicitud</h3>
+          <p>Te escribimos al correo que dejaste para confirmar el horario de la llamada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap foot">
+    <span>© <span id="year">2026</span> Rutta</span>
+    <span><a href="#agendar">Agendar llamada</a> · <a href="mailto:hola@rutta.com">hola@rutta.com</a></span>
+  </div>
+</footer>
+
+<script>
+  // Hairline del header al hacer scroll
+  var header = document.getElementById('site-header');
+  function onScroll(){ header.classList.toggle('is-stuck', window.scrollY > 8); }
+  window.addEventListener('scroll', onScroll, { passive:true });
+  onScroll();
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Envío del formulario.
+  // TODO: conectar con backend, Calendly o Formspree. Hoy solo muestra la confirmación en pantalla.
+  var form = document.getElementById('booking-form');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    form.classList.add('sent');
+    document.getElementById('booking-success').classList.add('sent');
+  });
+</script>
+</body>
+</html>
