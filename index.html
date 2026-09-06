@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Rutta centraliza despacho, rutas y seguimiento en tiempo real para empresas de transporte terrestre. Agenda una llamada de 30 minutos.">
 <title>Rutta — Software de operación para transporte terrestre</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='16' fill='none' stroke='%23262626' stroke-width='1.6'/%3E%3Cpath d='M17 9l4.2 8L17 25l-4.2-8z' fill='none' stroke='%23262626' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E"><meta property="og:type" content="website"><meta property="og:locale" content="es_ES"><meta property="og:site_name" content="Rutta"><meta property="og:title" content="Toda tu operación en una sola pantalla"><meta property="og:description" content="Despacho, rutas y seguimiento en tiempo real para empresas de transporte terrestre. Agenda una llamada de 30 minutos."><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='16' fill='none' stroke='%23262626' stroke-width='1.6'/%3E%3Cpath d='M17 9l4.2 8L17 25l-4.2-8z' fill='none' stroke='%23262626' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E"><meta property="og:type" content="website"><meta property="og:locale" content="es_ES"><meta property="og:site_name" content="Rutta"><meta property="og:title" content="Deja de coordinar tu flota entre WhatsApp y hojas de cálculo"><meta property="og:description" content="Despacho, rutas y seguimiento en tiempo real para empresas de transporte terrestre. Agenda una llamada de 30 minutos."><meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@200;300;400;500&display=swap">
@@ -239,6 +239,9 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media (max-width:520px){ .row{grid-template-columns:1fr} }
   .form-note{margin-top:16px;font-size:13px;color:var(--ink-3)}
+  .form-error{display:none;margin-top:16px;font-size:13px;line-height:1.5;color:#a3342b}
+  .form-error.is-visible{display:block}
+  .btn[disabled]{opacity:.55;pointer-events:none}
 
   .success{display:none;padding:20px 0 8px}
   .success .badge{
@@ -291,10 +294,10 @@
   <section class="wrap hero">
     <div>
       <p class="label">Para empresas de transporte terrestre</p>
-      <h1>Casi toda tu operación en una sola pantalla</h1>
+      <h1>Deja de coordinar tu flota entre WhatsApp y hojas de cálculo</h1>
       <p class="lead">
-        Rutta reúne despacho, rutas y seguimiento en tiempo real para que dejes de coordinar
-        tu flota entre hojas de cálculo, grupos de WhatsApp y llamadas perdidas.
+        Rutta reúne despacho, rutas y seguimiento en tiempo real. Una sola pantalla
+        para saber dónde está cada unidad y cuánto deja cada viaje.
       </p>
       <div class="hero-cta">
         <a class="btn btn--primary" href="#agendar">
@@ -435,7 +438,8 @@
       </div>
 
       <div class="card">
-        <form id="booking-form" novalidate>
+        <!-- Reemplaza TU_FORM_ID por el id del formulario de Formspree (formspree.io) -->
+        <form id="booking-form" action="https://formspree.io/f/TU_FORM_ID" method="POST" novalidate>
           <div class="row">
             <div class="field">
               <label for="nombre">Nombre</label>
@@ -470,10 +474,16 @@
             <label for="mensaje">Qué te gustaría resolver (opcional)</label>
             <textarea id="mensaje" name="mensaje" placeholder="Ej. no tenemos visibilidad de las entregas del día"></textarea>
           </div>
-          <button class="btn btn--primary btn--block" type="submit">
-            Agendar llamada
+          <!-- Honeypot anti-spam: los bots lo llenan y Formspree descarta el envío -->
+          <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true">
+          <button class="btn btn--primary btn--block" id="booking-submit" type="submit">
+            <span id="booking-submit-label">Agendar llamada</span>
             <span class="arrow"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg></span>
           </button>
+          <p class="form-error" id="booking-error" role="alert">
+            No pudimos enviar tu solicitud. Revisa tu conexión e inténtalo de nuevo, o escríbenos a
+            <a href="mailto:hola@rutta.com">hola@rutta.com</a>.
+          </p>
           <p class="form-note">Usamos tus datos solo para contactarte. Nada de spam.</p>
         </form>
 
@@ -505,14 +515,35 @@
 
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // Envío del formulario.
-  // TODO: conectar con backend, Calendly o Formspree. Hoy solo muestra la confirmación en pantalla.
+  // Envío del formulario a Formspree, sin recargar la página.
   var form = document.getElementById('booking-form');
+  var submit = document.getElementById('booking-submit');
+  var submitLabel = document.getElementById('booking-submit-label');
+  var errorBox = document.getElementById('booking-error');
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     if (!form.checkValidity()) { form.reportValidity(); return; }
-    form.classList.add('sent');
-    document.getElementById('booking-success').classList.add('sent');
+
+    errorBox.classList.remove('is-visible');
+    submit.disabled = true;
+    submitLabel.textContent = 'Enviando…';
+
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(function(res){
+      if (!res.ok) { throw new Error('Formspree respondió ' + res.status); }
+      form.classList.add('sent');
+      document.getElementById('booking-success').classList.add('sent');
+    })
+    .catch(function(){
+      errorBox.classList.add('is-visible');
+      submit.disabled = false;
+      submitLabel.textContent = 'Agendar llamada';
+    });
   });
 </script>
 </body>
